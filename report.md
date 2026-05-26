@@ -18,23 +18,22 @@ I looked at three terminal coding agents: Aider, Pi, and OpenCode. Aider was the
 
 3. Speech Recognition Choice – Local Whisper over Cloud APIs
 
-I considered Whisper local, Whisper API, Google Cloud STT, and Groq Whisper. Local Whisper won because of privacy and cost. Sending voice that might contain proprietary code to a cloud API is risky. Local runs offline and costs nothing. The trade-off is latency: about 2 seconds for a 5-second clip, and occasional mis-transcriptions of technical symbols like "->" becoming "to". But the confirmation step catches those errors.
+I used Local Whisper won because of privacy and cost. Sending voice that might contain proprietary code to a cloud API is risky. Local runs offline and costs nothing. The trade-off is latency: about 2 seconds for a 5-second clip, and occasional mis-transcriptions of technical symbols like "->" becoming "to". But the confirmation step catches those errors.
 
-Groq Whisper would be faster and slightly cheaper than Google, but still requires an internet connection and sends audio out. For a developer tool, local is the right default.
 
 4. Wake Word Engine – OpenWakeWord
 
-Alternatives were Porcupine (needs an API key and cloud model generation) and Snowboy (dead). OpenWakeWord runs fully offline with ONNX, has a pre-trained "Hey Jarvis" model, and reacts in under 100ms. The default threshold of 0.5 gave too many false positives from keyboard clicks and breathing. I raised it to 0.9, which almost eliminated false triggers but requires clearer speech. I also added a 3-second cooldown so the wake word doesn't fire again while Aider is running.
+OpenWakeWord runs fully offline with ONNX, has a pre-trained "Hey Jarvis" model, and reacts in under 100ms. The default threshold of 0.5 gave too many false positives from keyboard clicks and breathing. I raised it to 0.9, which almost eliminated false triggers but requires clearer speech. I also added a 3-second cooldown so the wake word doesn't fire again while Aider is running.
 
 5. Confirmation – Why Not Fully Hands-Free
 
 A fully hands-free system would execute after every transcription. That's dangerous because Whisper can make mistakes. One bad transcription could delete files. So I added a confirmation layer: the transcribed text is shown, and the system waits 15 seconds. If nothing happens, it auto-accepts. If the user hits spacebar, it accepts immediately. R key re-records.
 
-I tried voice confirmation (saying "accept" or "redo") but it added another Whisper pass, more latency, and risk of false acceptance from background speech. The current design keeps the user mostly hands-free (auto-accept after 15 seconds) but gives a simple keyboard escape for safety.
+The current design keeps the user mostly hands-free (auto-accept after 15 seconds) but gives a simple keyboard escape for safety.
 
 6. LLM Backend – Groq Llama 3.3 70B
 
-I compared Groq, OpenAI GPT-4o, Anthropic Claude, and local Llama via Ollama. Groq is extremely fast – first token in 0.2 to 0.5 seconds – and costs $0.59 per million input tokens, much cheaper than OpenAI or Anthropic. Local Llama on CPU is too slow (3-10 seconds) and would need a GPU for decent performance. The Groq free tier (30 requests per minute) is enough for development and demo. I set an environment variable for the API key and excluded it from the submission archive.
+Groq is extremely fast, Local Llama on CPU is too slow (3-10 seconds) and would need a GPU for decent performance. The Groq free tier (30 requests per minute) is enough for development and demo. I set an environment variable for the API key and excluded it from the submission archive.
 
 7. Integration with Aider
 
@@ -54,34 +53,22 @@ The system is not 100% hands-free because confirmation still needs a spacebar pr
 
 It only handles single-turn commands. There is no memory across wake words. That could be added later with Aider's chat mode.
 
-Audio device handling is basic. On Windows it works without changes, but Linux or macOS might need manual device index configuration. That is noted in the README.
+Audio device handling is basic. On Windows it works without changes, but Linux or macOS might need manual device index configuration. 
 
-9. Performance
 
-On a laptop with an Intel i7-1165G7 and 16GB RAM running Windows 11:
 
-Wake word detection: 0.08 seconds
-Recording 5 seconds of speech: 5 seconds (real time)
-Whisper transcription: 2.1 seconds
-Confirmation wait if auto-accept: 0 to 15 seconds
-Aider + Groq response: 5.3 seconds
-Git commit: 0.4 seconds
 
-Total with auto-accept: about 12.5 seconds. That feels acceptable for interactive coding.
-
-Using the tiny Whisper model would cut transcription to 0.8 seconds but lower accuracy. I stuck with base for better reliability.
-
-10. Cost Analysis
+9. Cost Analysis
 
 For 100 interactions, each with about 20 seconds of speech and 500 tokens:
 
 Local Whisper: $0
 OpenWakeWord: $0
-Groq LLM (500 input + 800 output tokens): about $0.001 per interaction, so $0.10 per 100 interactions.
+Groq LLM: $0 (free tier)
 
-If I had used Groq Whisper cloud STT instead of local, the cost would be around $8 per month for 1000 interactions. Local saves 87% of the cost and keeps data private.
+I initially tried OpenRouter but hit rate limits. Switched to Groq. It is fast, free, and good enough for this use case. No cost for the entire pipeline.
 
-11. What I Learned
+10. What I Learned
 
 Local STT is good enough for developer tools. Whisper's accuracy combined with a confirmation step works in practice.
 
@@ -93,7 +80,7 @@ Filtering subprocess output makes the terminal much cleaner for voice use.
 
 Using Git as an automatic audit log gives a safety net for every voice command.
 
-12. Possible Future Improvements
+11. Possible Future Improvements
 
 Add voice confirmation using a second wake word model for "accept" and "redo". That would eliminate the last keyboard press.
 
@@ -107,4 +94,4 @@ Automatically detect the default microphone instead of relying on device indices
 
 This project shows a near hands-free voice interface for a terminal coding agent. It reduces keyboard use to at most one keypress per interaction and often zero when auto-accept triggers. Local Whisper and OpenWakeWord keep it private and cost-free. The architecture is modular, so swapping STT or LLM backends is straightforward.
 
-Setup time before demo: about 2 minutes to install dependencies, set GROQ_API_KEY, and run app.py.
+Setup time before demo: about 6-8 minutes to install dependencies, set GROQ_API_KEY, and run app.py.
