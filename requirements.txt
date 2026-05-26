@@ -1,0 +1,9 @@
+sounddevice
+scipy
+openai-whisper
+OpenAI   
+aider-chat>=0.70.0
+keyboard
+groq
+openwakeword
+onnxruntime
